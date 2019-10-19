@@ -10,32 +10,64 @@ server.use(express.json());
 
 // CRUD - Create, Read , Update, Delete
 
-server.get('/users', (req,res) => {
+const users = ['nelson', 'ronaldo', 'juca'];
+
+// Log de (Middlewares Global)
+server.use((req, res, next) => {
+  console.time('Request');
+  console.log(`Método: ${req.method}; URL: ${req.url}`);
+  //return next();
+  next();
+  console.timeEnd('Request');
+});
+
+
+function checkUserExistis(req, res, next){
+  if (!req.body.name){
+    return res.status(400).json({ error: 'User name is required'});
+  }
+  return next();
+}
+
+
+function checkUserInArray(req, res, next) {
+  
+  const user = users[req.params.index];
+    
+  if (!users) {
+    return res.status(400).json({ error: 'User does not exists'});
+  }
+  req.user = user;
+  return next();
+}
+
+
+server.get('/users', checkUserInArray, (req,res) => {
   return res.json(users);
 })
 
-server.post('/users', (req, res) => {
+server.get('/users/:index', checkUserInArray, (req,res) => {
+  //const { index } = req.params;
+  return res.json(req.user);
+  //return res.send('alo mundo');
+})
+
+server.post('/users', checkUserExistis, (req, res) => {
   const { name } = req.body;
   users.push(name);
   return res.json(users);
 });
 
-const users = ['nelson', 'ronaldo', 'juca'];
-
-server.get('/users/:index', (req,res) => {
-  const { index } = req.params;
-  return res.json(users[index]);
-  //return res.send('alo mundo');
-})
-
-server.put('/users/:index', (req, res) => {
+server.put('/users/:index', checkUserExistis, checkUserInArray, (req, res) => {
   const { index } = req.params;
   const { name } = req.body;
   users[index] = name;
   return res.json(users);
 });
 
-server.delete('/users/:index', (req, res) => {
+
+
+server.delete('/users/:index', checkUserInArray, (req, res) => {
   const { index } = req.params;
   users.splice(index, 1);
   return res.send();
